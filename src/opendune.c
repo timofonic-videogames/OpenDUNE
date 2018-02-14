@@ -1218,7 +1218,7 @@ int main(int argc, char **argv)
 	if (err != NULL) _dup2(_fileno(err), _fileno(stderr));
 	if (out != NULL) _dup2(_fileno(out), _fileno(stdout));
 	FreeConsole();
-#endif
+#endif /* _WIN32 */
 #ifdef TOS
 	(void)Cconws(window_caption);
 	(void)Cconws("\r\nrevision:   ");
@@ -1236,7 +1236,16 @@ int main(int argc, char **argv)
 	if(atexit(exit_handler) != 0) {
 		Error("atexit() failed\n");
 	}
+#endif /* TOS */
+#ifdef DOS
+	/* open log files and set buffering mode */
+	g_errlog = fopen("error.log", "w");
+	if(g_errlog != NULL) setvbuf(g_errlog, NULL, _IONBF, 0);
+#ifdef _DEBUG
+	g_outlog = fopen("output.log", "w");
+	if(g_outlog != NULL) setvbuf(g_outlog, NULL, _IOLBF, 0);
 #endif
+#endif /* DOS */
 	CrashLog_Init();
 
 	VARIABLE_NOT_USED(argc);
@@ -1260,7 +1269,7 @@ int main(int argc, char **argv)
 	Debug("  s_enableLog = %d\n", (int)s_enableLog);
 
 	if (!File_Init()) {
-		exit(1);
+		return 1;
 	}
 
 	/* Loading config from dune.cfg */
@@ -1274,7 +1283,7 @@ int main(int argc, char **argv)
 	/* Writing config to dune.cfg */
 	if (commit_dune_cfg && !Config_Write("dune.cfg", &g_config)) {
 		Error("Error writing to dune.cfg file.\n");
-		exit(1);
+		return 1;
 	}
 
 	Input_Init();
@@ -1306,7 +1315,8 @@ int main(int argc, char **argv)
 
 	PrepareEnd();
 	Free_IniFile();
-	exit(0);
+
+	return 0;
 }
 
 /**
